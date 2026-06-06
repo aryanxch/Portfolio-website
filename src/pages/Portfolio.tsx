@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ExperienceItem from '@/components/ExperienceItem';
 import ProjectItem from '@/components/ProjectItem';
+import RotatingQuote from '@/components/RotatingQuote';
+import TerminalMode from '@/components/TerminalMode';
+import HiddenTarget from '@/components/HiddenTarget';
 import profilePhoto from '@/assets/profile-photo.jpg';
 const Portfolio = () => {
+  const [terminalOpen, setTerminalOpen] = useState(false);
   return <div className="min-h-screen bg-background">
-      <Sidebar />
-      
+      <Sidebar onOpenTerminal={() => setTerminalOpen(true)} />
+      {terminalOpen && <TerminalMode onClose={() => setTerminalOpen(false)} />}
+
       {/* Main content */}
       <div className="ml-80 min-h-screen">
         <div className="max-w-4xl p-8 lg:p-12">
@@ -28,6 +34,19 @@ const Portfolio = () => {
             </div>
           </section>
 
+          {/* I think about this often */}
+          <section className="mb-16">
+            <RotatingQuote />
+          </section>
+
+          {/* Currently Optimizing */}
+          <section className="mb-16 relative">
+            <h2 className="text-2xl font-serif font-bold mb-4">Currently Optimizing</h2>
+            <p className="text-3xl font-serif italic leading-none">life.</p>
+            <p className="text-xs text-muted-foreground mt-3 italic">subject to constraints.</p>
+            <HiddenTarget size={26} shardCount={22} wrapperClassName="absolute top-0 right-2" />
+          </section>
+
           {/* Experience Section */}
           <section id="experience" className="mb-16">
             <h2 className="text-2xl font-serif font-bold mb-8">Experience</h2>
@@ -45,14 +64,19 @@ const Portfolio = () => {
           <section id="projects" className="mb-16">
             <h2 className="text-2xl font-serif font-bold mb-8">Projects</h2>
             
+            <ProjectItem title="Multi-Linear Regression — Predicting Car Mileage" technologies="Linear Regression, Minitab, Mallows' Cp, Durbin-Watson" date="Jan 2025 – Apr 2025" description="Built a multiple linear regression model on the 1999 Car Buyers Guide dataset (n=138) to predict city mileage from weight, horsepower, displacement, and transmission type; performed best-subsets regression using Mallows' Cp for variable selection, diagnosed assumptions via residual analysis and the Durbin-Watson test, and introduced a quadratic Weight² term that improved R² from 76.7% to 83.3% after removing high-leverage outliers." />
+
+            <ProjectItem title="Housing Market Analysis | Georgia Tech" technologies="Python, Pandas, Statistical Analysis, Data Visualization" date="Aug 2024 – Dec 2024" description="Investigated the relationship between interest rates, unemployment, and Connecticut housing sales (inspired by The Big Short and macroeconomic theory); cleaned and integrated multi-source datasets (CSV, HTML, JSON; >125MB) from government portals, calculated correlation coefficients and elasticity metrics to evaluate residential vs. commercial volatility across recessions, and built affordability indices revealing a 500% rise in sale-to-interest rate ratios from 2001 to 2021." />
+
             <ProjectItem title="Budget Allocation Optimization for Large Cap Companies" technologies="Multivariable Calculus, Linear Algebra, Cobb-Douglas" date="Aug 2025" description="Modelled a company's revenue using a Cobb-Douglas production function based on historical data, then applied the method of Lagrange multipliers to add constraints and optimize the budget." />
-            
+
             <ProjectItem title="Healthcare Go-to-Market Strategy" technologies="Sales Strategy, SalesQB, Market Research" date="Oct 2024" description="Developed 2 targeted sales decks for 4 buyer segments (distributors, wholesalers, urgent care, virtual care), aligning messaging to buyer needs; identified 15–20 companies and 25 target accounts to grow the SMB healthcare pipeline." />
           </section>
 
           {/* Education Section */}
-          <section id="education" className="mb-16">
+          <section id="education" className="mb-16 relative">
             <h2 className="text-2xl font-serif font-bold mb-8">Education</h2>
+            <HiddenTarget size={22} shardCount={20} wrapperClassName="absolute top-1 right-2" />
             
             <div className="mb-8">
               <h4 className="text-base font-medium mb-1">Bachelor of Science in Industrial Engineering</h4>
@@ -68,8 +92,9 @@ const Portfolio = () => {
           </section>
 
           {/* Technical Skills Section */}
-          <section className="mb-16">
+          <section className="mb-16 relative">
             <h2 className="text-2xl font-serif font-bold mb-8">Technical Skills</h2>
+            <HiddenTarget size={30} shardCount={24} wrapperClassName="absolute top-1 right-2" />
             
             <div className="space-y-4">
               <div>
@@ -120,6 +145,9 @@ const Portfolio = () => {
               </div>
             </div>
           </section>
+
+          {/* Hidden target */}
+          <HiddenTarget />
         </div>
       </div>
     </div>;
