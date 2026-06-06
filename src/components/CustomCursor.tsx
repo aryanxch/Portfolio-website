@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const RING_LAG = 0.16;
+const RING_LAG = 0.12;
 const INTERACTIVE_SELECTOR = 'a, button, [role="button"], label, summary';
 const TEXT_INPUT_SELECTOR = 'input, textarea, [contenteditable="true"]';
 
