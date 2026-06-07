@@ -8,7 +8,7 @@
       // https://github.com/rafgraph/spa-github-pages
       // Rewrites a deep link like /range into /?/range so the SPA can handle it.
       (function () {
-        var pathSegmentsToKeep = 0;
+        var pathSegmentsToKeep = 1;
         var l = window.location;
         l.replace(
           l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
