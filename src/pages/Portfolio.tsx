@@ -13,8 +13,8 @@ const Portfolio = () => {
       {terminalOpen && <TerminalMode onClose={() => setTerminalOpen(false)} />}
 
       {/* Main content */}
-      <div className="ml-80 min-h-screen">
-        <div className="max-w-4xl p-8 lg:p-12">
+      <div className="lg:ml-80 min-h-screen">
+        <div className="max-w-4xl p-4 sm:p-8 lg:p-12">
           {/* About Section */}
           <section id="about" className="mb-16">
             <div className="flex flex-col lg:flex-row gap-8 items-start">

@@ -49,30 +49,30 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-80 bg-background border-r border-border p-8 overflow-y-auto">
-      <div className="space-y-8">
+    <aside className="lg:fixed lg:left-0 lg:top-0 lg:h-full lg:w-80 bg-background border-b lg:border-b-0 lg:border-r border-border lg:overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-serif font-bold tracking-wide mb-3">Aryan Choudhari</h1>
-          <div className="space-y-1 font-mono">
-            <div className="flex items-baseline gap-3">
-              <span className="text-xs text-muted-foreground w-8">ATL</span>
-              <span className="text-base tabular-nums">{formatTime(currentTime, 'America/New_York')}</span>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between lg:flex-col gap-3 lg:gap-0">
+          <h1 className="text-lg sm:text-xl font-serif font-bold tracking-wide lg:mb-3">Aryan Choudhari</h1>
+          <div className="flex flex-row sm:flex-col lg:flex-col gap-x-6 gap-y-1 font-mono">
+            <div className="flex items-baseline gap-2 lg:gap-3">
+              <span className="text-[10px] sm:text-xs text-muted-foreground lg:w-8">ATL</span>
+              <span className="text-sm sm:text-base tabular-nums">{formatTime(currentTime, 'America/New_York')}</span>
             </div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-xs text-muted-foreground w-8">IST</span>
-              <span className="text-base tabular-nums">{formatTime(currentTime, 'Asia/Kolkata')}</span>
+            <div className="flex items-baseline gap-2 lg:gap-3">
+              <span className="text-[10px] sm:text-xs text-muted-foreground lg:w-8">IST</span>
+              <span className="text-sm sm:text-base tabular-nums">{formatTime(currentTime, 'Asia/Kolkata')}</span>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-4">
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 lg:flex-col lg:gap-y-4">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
-              className="block text-left text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+              className="text-left text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
             >
               {item.label}
             </button>
@@ -80,8 +80,8 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
         </nav>
 
         {/* Controls */}
-        <div className="space-y-3 pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
+        <div className="space-y-3 pt-3 lg:pt-4 border-t border-border">
+          <div className="flex items-center gap-2 flex-wrap">
             <ThemeToggle />
             <button
               onClick={onOpenTerminal}
@@ -100,7 +100,7 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
         {/* Hidden target */}
         <HiddenTarget size={28} shardCount={22} wrapperClassName="pt-2 flex justify-start" />
       </div>
-    </div>
+    </aside>
   );
 };
 
