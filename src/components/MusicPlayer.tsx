@@ -1,7 +1,7 @@
 import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const TRACK_URL = "/music.mp3";
+const TRACK_URL = `${import.meta.env.BASE_URL}music.mp3`;
 const TRACK_LABEL = "play music";
 
 const fmt = (sec: number) => {
