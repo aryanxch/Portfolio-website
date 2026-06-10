@@ -5,21 +5,23 @@ import ProjectItem from '@/components/ProjectItem';
 import RotatingQuote from '@/components/RotatingQuote';
 import TerminalMode from '@/components/TerminalMode';
 import HiddenTarget from '@/components/HiddenTarget';
-import profilePhoto from '@/assets/profile-photo.jpg';
+import ProfilePhoto from '@/components/ProfilePhoto';
+import ScrollReveal from '@/components/ScrollReveal';
 const Portfolio = () => {
   const [terminalOpen, setTerminalOpen] = useState(false);
   return <div className="min-h-screen bg-background">
       <Sidebar onOpenTerminal={() => setTerminalOpen(true)} />
+      <ScrollReveal />
       {terminalOpen && <TerminalMode onClose={() => setTerminalOpen(false)} />}
 
-      {/* Main content */}
-      <div className="lg:ml-80 min-h-screen">
+      {/* Main content — bottom padding clears the ticker tape */}
+      <div className="lg:ml-80 min-h-screen pb-10">
         <div className="max-w-4xl p-4 sm:p-8 lg:p-12">
           {/* About Section */}
           <section id="about" className="mb-16">
             <div className="flex flex-col lg:flex-row gap-8 items-start">
               <div className="lg:w-1/2">
-                <img src={profilePhoto} alt="Aryan Choudhari" className="w-full max-w-md rounded-lg shadow-lg" />
+                <ProfilePhoto />
                 <p className="text-sm text-muted-foreground mt-2 italic">Aryan Choudhari</p>
               </div>
               

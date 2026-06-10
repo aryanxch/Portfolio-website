@@ -8,6 +8,34 @@ const quotes: Array<{ text: string; attribution?: string }> = [
   {
     text: "He had hit rock bottom and I fear he will dig again.",
   },
+  {
+    text: "I love deadlines. I love the whooshing noise they make as they go by.",
+    attribution: "Douglas Adams",
+  },
+  {
+    text: "Life moves pretty fast. If you don't stop and look around once in a while, you could miss it.",
+    attribution: "Ferris Bueller",
+  },
+  {
+    text: "My fake plants died because I did not pretend to water them.",
+    attribution: "Mitch Hedberg",
+  },
+  {
+    text: "I refuse to join any club that would have me as a member.",
+    attribution: "Groucho Marx",
+  },
+  {
+    text: "Hard work pays off in the future. Laziness pays off now.",
+    attribution: "Steven Wright",
+  },
+  {
+    text: "The road to success is dotted with many tempting parking spaces.",
+    attribution: "Will Rogers",
+  },
+  {
+    text: "If you think nobody cares if you're alive, try missing a couple of payments.",
+    attribution: "Earl Wilson",
+  },
 ];
 
 const ROTATE_MS = 8000;

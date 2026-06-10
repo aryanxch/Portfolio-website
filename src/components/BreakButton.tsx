@@ -125,6 +125,14 @@ const BreakButton = () => {
     setBreaking(true);
   };
 
+  // the terminal's `rm -rf /` triggers the same shatter
+  useEffect(() => {
+    const onBreak = () => handleClick();
+    window.addEventListener("aryan:break", onBreak);
+    return () => window.removeEventListener("aryan:break", onBreak);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breaking]);
+
   useEffect(() => {
     if (!breaking) return;
 

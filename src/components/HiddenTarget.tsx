@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { shoot, crash } from "@/lib/sfx";
 
 const HITS_TO_BREAK = 5;
 
@@ -57,6 +58,7 @@ const HiddenTarget = ({
 
     const next = hits + 1;
     if (next >= HITS_TO_BREAK) {
+      crash();
       const rect = btnRef.current?.getBoundingClientRect();
       if (rect) {
         setShatterOrigin({
@@ -66,6 +68,8 @@ const HiddenTarget = ({
       }
       setShards(buildShards(shardCount));
       window.setTimeout(() => setGone(true), 1400);
+    } else {
+      shoot();
     }
     setHits(next);
   };

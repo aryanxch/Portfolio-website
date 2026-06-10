@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { TerminalSquare } from 'lucide-react';
+import { TerminalSquare, Volume2, VolumeX } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import MusicPlayer from './MusicPlayer';
 import HiddenTarget from './HiddenTarget';
 import BreakButton from './BreakButton';
+import VisitorCounter from './VisitorCounter';
+import { isSfxEnabled, setSfxEnabled, blip } from '@/lib/sfx';
 
 interface SidebarProps {
   onOpenTerminal: () => void;
@@ -11,12 +13,38 @@ interface SidebarProps {
 
 const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeSection, setActiveSection] = useState('about');
+  const [sfxOn, setSfxOn] = useState(isSfxEnabled());
+
+  const toggleSfx = () => {
+    const next = !sfxOn;
+    setSfxOn(next);
+    setSfxEnabled(next);
+    if (next) blip();
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // scrollspy: highlight the section currently in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { rootMargin: '-35% 0px -55% 0px' }
+    );
+    ['about', 'experience', 'projects', 'education', 'contact'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
   }, []);
 
   const formatTime = (date: Date, timeZone: string) => {
@@ -68,15 +96,29 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
 
         {/* Navigation */}
         <nav className="flex flex-wrap gap-x-4 gap-y-2 lg:flex-col lg:gap-y-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollToSection(item.id)}
-              className="text-left text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
-              {item.label}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const active = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`text-left text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  active
+                    ? 'text-accent lg:translate-x-1'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span
+                  className={`hidden lg:inline-block overflow-hidden transition-all duration-200 ${
+                    active ? 'w-3 opacity-100' : 'w-0 opacity-0'
+                  }`}
+                >
+                  ▸
+                </span>
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
         {/* Controls */}
@@ -91,6 +133,14 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
             >
               <TerminalSquare className="w-4 h-4" />
             </button>
+            <button
+              onClick={toggleSfx}
+              aria-label={sfxOn ? 'mute sound effects' : 'unmute sound effects'}
+              title={sfxOn ? 'sfx: on' : 'sfx: off'}
+              className="inline-flex items-center justify-center w-8 h-8 rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+            >
+              {sfxOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
             <span className="text-xs text-muted-foreground ml-1">try terminal</span>
           </div>
           <MusicPlayer />
@@ -99,6 +149,8 @@ const Sidebar = ({ onOpenTerminal }: SidebarProps) => {
 
         {/* Hidden target */}
         <HiddenTarget size={28} shardCount={22} wrapperClassName="pt-2 flex justify-start" />
+
+        <VisitorCounter />
       </div>
     </aside>
   );
