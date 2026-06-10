@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import profilePhoto from "@/assets/profile-photo.jpg";
-import { shoot } from "@/lib/sfx";
+import { shoot, crash } from "@/lib/sfx";
 
-const SPIN_EVERY = 5;
+const SHOTS_TO_BREAK = 5;
 const DRAG_THRESHOLD = 6;
+const PIECE_COLS = 5;
+const PIECE_ROWS = 4;
+const CRACK_DRAW_MS = 700;
+const FALL_MS = 1500;
+const RESET_AFTER_MS = 2300;
 
 interface Hole {
   id: number;
@@ -13,31 +18,106 @@ interface Hole {
   size: number;
 }
 
-interface Burst {
-  id: number;
-  x: number;
-  y: number;
-  shards: { dx: number; dy: number; rot: number; size: number; delay: number }[];
+// crack coordinates live in the photo's 0–100 viewBox space
+interface CrackPath {
+  id: string;
+  d: string;
+  length: number;
+  delay: number;
+  duration: number;
 }
 
-const buildBurst = (id: number, x: number, y: number): Burst => ({
-  id,
-  x,
-  y,
-  shards: Array.from({ length: 8 }).map((_, i) => {
-    const angle = (Math.PI * 2 * i) / 8 + (Math.random() - 0.5) * 0.5;
-    const dist = 80 + Math.random() * 160;
-    return {
-      dx: Math.cos(angle) * dist,
-      dy: Math.sin(angle) * dist,
-      rot: (Math.random() - 0.5) * 540,
-      size: 3 + Math.random() * 5,
-      delay: Math.random() * 40,
-    };
-  }),
-});
+interface Piece {
+  row: number;
+  col: number;
+  drift: number;
+  rot: number;
+  delay: number;
+  duration: number;
+}
+
+const buildCracks = (xPct: number, yPct: number, idBase: number): CrackPath[] => {
+  const rayCount = 4 + Math.floor(Math.random() * 3);
+  const out: CrackPath[] = [];
+  for (let r = 0; r < rayCount; r++) {
+    const baseAngle = (Math.PI * 2 * r) / rayCount + (Math.random() - 0.5) * 0.7;
+    const segments = 4 + Math.floor(Math.random() * 3);
+    const totalLen = 9 + Math.random() * 12;
+    let x = xPct;
+    let y = yPct;
+    let angle = baseAngle;
+    let d = `M${x.toFixed(1)} ${y.toFixed(1)}`;
+    let length = 0;
+    for (let s = 0; s < segments; s++) {
+      angle += (Math.random() - 0.5) * 0.8;
+      const segLen = (totalLen / segments) * (0.6 + Math.random() * 0.8);
+      const nx = x + Math.cos(angle) * segLen;
+      const ny = y + Math.sin(angle) * segLen;
+      d += ` L${nx.toFixed(1)} ${ny.toFixed(1)}`;
+      length += Math.hypot(nx - x, ny - y);
+      x = nx;
+      y = ny;
+    }
+    out.push({
+      id: `${idBase}-${r}`,
+      d,
+      length,
+      delay: Math.random() * 150,
+      duration: CRACK_DRAW_MS * (0.7 + Math.random() * 0.6),
+    });
+  }
+  return out;
+};
+
+const buildPieces = (): Piece[] => {
+  const pieces: Piece[] = [];
+  for (let row = 0; row < PIECE_ROWS; row++) {
+    for (let col = 0; col < PIECE_COLS; col++) {
+      pieces.push({
+        row,
+        col,
+        drift: (Math.random() - 0.5) * 120,
+        rot: (Math.random() - 0.5) * 240,
+        delay: Math.random() * 200,
+        duration: FALL_MS * (0.8 + Math.random() * 0.4),
+      });
+    }
+  }
+  return pieces;
+};
 
 const HOLE_CRACKS = ["M10 10 L3 4", "M10 10 L17 5", "M10 10 L4 16", "M10 10 L16 15", "M10 10 L10 2"];
+
+// transition-driven (var() in keyframe transforms doesn't animate reliably)
+const FallingPiece = ({ piece }: { piece: Piece }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // force a reflow so the initial position is committed, then transition to fallen
+    el.getBoundingClientRect();
+    el.style.transition = `transform ${piece.duration}ms cubic-bezier(0.45, 0.05, 0.8, 0.5) ${piece.delay}ms, opacity ${Math.round(piece.duration * 0.3)}ms ease-in ${piece.delay + Math.round(piece.duration * 0.7)}ms`;
+    el.style.transform = `translate(${piece.drift}px, 110vh) rotate(${piece.rot}deg)`;
+    el.style.opacity = "0";
+  }, [piece]);
+
+  return (
+    <div
+      ref={ref}
+      className="photo-piece"
+      style={{
+        left: `${(piece.col / PIECE_COLS) * 100}%`,
+        top: `${(piece.row / PIECE_ROWS) * 100}%`,
+        width: `${100 / PIECE_COLS}%`,
+        height: `${100 / PIECE_ROWS}%`,
+        backgroundImage: `url(${profilePhoto})`,
+        backgroundSize: `${PIECE_COLS * 100}% ${PIECE_ROWS * 100}%`,
+        backgroundPosition: `${(piece.col / (PIECE_COLS - 1)) * 100}% ${(piece.row / (PIECE_ROWS - 1)) * 100}%`,
+      }}
+    />
+  );
+};
 
 const BulletHole = ({ hole }: { hole: Hole }) => (
   <svg
@@ -60,15 +140,19 @@ const BulletHole = ({ hole }: { hole: Hole }) => (
 );
 
 const ProfilePhoto = () => {
-  const [anim, setAnim] = useState<"none" | "recoil" | "spin">("none");
+  const [recoiling, setRecoiling] = useState(false);
+  const [respawning, setRespawning] = useState(false);
   const [holes, setHoles] = useState<Hole[]>([]);
-  const [bursts, setBursts] = useState<Burst[]>([]);
+  const [cracks, setCracks] = useState<CrackPath[]>([]);
+  const [pieces, setPieces] = useState<Piece[]>([]);
+  const broken = pieces.length > 0;
+  const brokenRef = useRef(false);
+  brokenRef.current = broken;
   const shotsRef = useRef(0);
   const idRef = useRef(0);
+  const timersRef = useRef<number[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const animRef = useRef(anim);
-  animRef.current = anim;
   const drag = useRef({
     active: false,
     moved: false,
@@ -86,8 +170,15 @@ const ProfilePhoto = () => {
 
   useEffect(() => {
     const d = drag.current;
-    return () => cancelAnimationFrame(d.raf);
+    const timers = timersRef.current;
+    return () => {
+      cancelAnimationFrame(d.raf);
+      timers.forEach((t) => window.clearTimeout(t));
+    };
   }, []);
+
+  const later = (fn: () => void, ms: number) =>
+    timersRef.current.push(window.setTimeout(fn, ms));
 
   const applyDragTransform = () => {
     const d = drag.current;
@@ -120,41 +211,45 @@ const ProfilePhoto = () => {
     d.raf = requestAnimationFrame(step);
   };
 
+  const breakApart = () => {
+    crash();
+    setPieces(buildPieces());
+    later(() => {
+      setPieces([]);
+      setHoles([]);
+      setCracks([]);
+      shotsRef.current = 0;
+      setRespawning(true);
+      later(() => setRespawning(false), 500);
+    }, RESET_AFTER_MS);
+  };
+
   const fireShot = (clientX: number, clientY: number) => {
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) return;
 
     shoot();
     const id = idRef.current++;
+    const xPct = ((clientX - rect.left) / rect.width) * 100;
+    const yPct = ((clientY - rect.top) / rect.height) * 100;
     setHoles((h) => [
       ...h,
-      {
-        id,
-        xPct: ((clientX - rect.left) / rect.width) * 100,
-        yPct: ((clientY - rect.top) / rect.height) * 100,
-        rot: Math.random() * 360,
-        size: 16 + Math.random() * 10,
-      },
+      { id, xPct, yPct, rot: Math.random() * 360, size: 16 + Math.random() * 10 },
     ]);
-    const burst = buildBurst(id, clientX, clientY);
-    setBursts((b) => [...b, burst]);
-    window.setTimeout(() => setBursts((b) => b.filter((x) => x.id !== burst.id)), 1300);
+    setCracks((c) => [...c, ...buildCracks(xPct, yPct, id)]);
+
+    setRecoiling(true);
+    later(() => setRecoiling(false), 280);
 
     shotsRef.current += 1;
-    if (shotsRef.current % SPIN_EVERY === 0) {
-      setAnim("spin");
-      window.setTimeout(() => {
-        setAnim("none");
-        setHoles([]); // fresh photo, who dis
-      }, 1000);
-    } else {
-      setAnim("recoil");
-      window.setTimeout(() => setAnim((a) => (a === "recoil" ? "none" : a)), 280);
+    if (shotsRef.current >= SHOTS_TO_BREAK) {
+      // let the cracks finish spreading before it gives way
+      later(breakApart, CRACK_DRAW_MS + 150);
     }
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (animRef.current === "spin") return;
+    if (brokenRef.current) return;
     const d = drag.current;
     cancelAnimationFrame(d.raf);
     d.active = true;
@@ -193,14 +288,14 @@ const ProfilePhoto = () => {
     d.active = false;
     if (d.moved) {
       springBack();
-    } else {
+    } else if (!brokenRef.current) {
       fireShot(e.clientX, e.clientY);
     }
   };
 
   // subtle 3D tilt toward cursor when idle (desktop only)
   const onMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (animRef.current !== "none" || drag.current.active) return;
+    if (recoiling || brokenRef.current || drag.current.active) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const el = imgRef.current;
     if (!el) return;
@@ -215,58 +310,69 @@ const ProfilePhoto = () => {
   };
 
   return (
-    <>
-      <div
-        ref={wrapRef}
-        className="relative w-full max-w-md select-none touch-none"
-        style={{ willChange: "transform" }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        title="take the shot. or drag me around."
-      >
-        <img
-          ref={imgRef}
-          src={profilePhoto}
-          alt="Aryan Choudhari"
-          draggable={false}
-          onMouseMove={onMouseMove}
-          onMouseLeave={onMouseLeave}
-          className={`w-full rounded-lg shadow-lg ${
-            anim === "recoil" ? "photo-recoil" : anim === "spin" ? "photo-spin" : ""
-          }`}
-          style={{ transition: "transform 150ms ease-out", willChange: "transform" }}
-        />
-        {anim !== "spin" && holes.map((h) => <BulletHole key={h.id} hole={h} />)}
-      </div>
+    <div
+      ref={wrapRef}
+      className="relative w-full max-w-md select-none touch-none"
+      style={{ willChange: "transform" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title="take the shot. or drag me around."
+    >
+      <img
+        ref={imgRef}
+        src={profilePhoto}
+        alt="Aryan Choudhari"
+        draggable={false}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
+        className={`w-full rounded-lg shadow-lg ${recoiling ? "photo-recoil" : ""} ${
+          respawning ? "photo-respawn" : ""
+        }`}
+        style={{
+          transition: "transform 150ms ease-out",
+          willChange: "transform",
+          visibility: broken ? "hidden" : "visible",
+        }}
+      />
 
-      {bursts.map((b) =>
-        b.shards.map((s, i) => (
-          <span
-            key={`${b.id}-${i}`}
-            className="hidden-shard"
-            style={
-              {
-                position: "fixed",
-                left: b.x,
-                top: b.y,
-                width: s.size,
-                height: s.size,
-                background: "#22c55e",
-                boxShadow: "0 0 10px rgba(34,197,94,0.85), 0 0 18px rgba(34,197,94,0.45)",
-                pointerEvents: "none",
-                zIndex: 60,
-                "--dx": `${s.dx}px`,
-                "--dy": `${s.dy}px`,
-                "--rot": `${s.rot}deg`,
-                animationDelay: `${s.delay}ms`,
-              } as React.CSSProperties
-            }
-          />
-        ))
+      {/* glass cracks, drawn slowly around each impact */}
+      {!broken && cracks.length > 0 && (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }}
+        >
+          {cracks.map((c) => (
+            <path
+              key={c.id}
+              d={c.d}
+              fill="none"
+              stroke="rgba(15,15,15,0.7)"
+              strokeWidth="1.1"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              style={{
+                strokeDasharray: c.length,
+                strokeDashoffset: c.length,
+                animation: `crack-draw ${c.duration}ms cubic-bezier(0.22, 1, 0.36, 1) forwards`,
+                animationDelay: `${c.delay}ms`,
+              }}
+            />
+          ))}
+        </svg>
       )}
-    </>
+
+      {!broken && holes.map((h) => <BulletHole key={h.id} hole={h} />)}
+
+      {/* the photo breaks into pieces that fall down the page */}
+      {pieces.map((p) => (
+        <FallingPiece key={`${p.row}-${p.col}`} piece={p} />
+      ))}
+    </div>
   );
 };
 
