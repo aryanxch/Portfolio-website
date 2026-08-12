@@ -5,7 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === "production" ? "/Portfolio-website/" : "/",
+  // Served from the custom domain aryanc.in at the root, not a repo subpath
+  base: "/",
   server: {
     host: "::",
     port: Number(process.env.PORT) || 8080,
